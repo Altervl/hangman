@@ -1,54 +1,82 @@
 # frozen_string_literal: true
 
+require 'colorize'
 require_relative 'computer'
 require_relative 'player'
-require_relative 'display'
 
 # Main class of the project, holds the entire state of the game and results
 class Game
-  attr_reader :player, :computer, :display, :word, :state
-  attr_accessor :attempts, :hidden, :revealed, :message
-
   def initialize
     @player = Player.new
     @computer = Computer.new
-    @display = Display.new
     @attempts = 7
-    @hidden = @word.split ''
-    @revealed = []
-    @message = 'Try a letter!'
-    @state = [attempts, hidden, revealed, message]
+    @revealed = ''
+    @winner = false
   end
 
+  # Runs the game loop
   def play
-    @word = computer.pick_word
+    @word = @computer.pick_word
 
-    display.show state
+    # Continues while they're attempts left
+    while @attempts.positive?
+      display
 
-    while attempts.positive?
-      letter = player.guess
+      letter = @player.guess
 
       process letter
 
-      if hidden.empty?
-        @message = 'Congratulations, you won!'
+      @winner = true if @revealed == @word
+    end
 
-        display.show state
-        exit
-      end
+    totalize
+  end
 
-      display.show state
+  # Shows the letter if guess is right or decreases the attempts else,
+  # notifies the player
+  def process(guess)
+    if @word.include? guess
+      @revealed << guess
+      puts 'Correct, next letter!'.light_green
+    else
+      @attempts -= 1
+      puts 'Incorrect, next try!'.light_red
     end
   end
 
-  def process(guess)
-    if word.include? guess
-      revealed << guess
-      hidden.delete guess
-      @message = 'Correct!'
+  # Shows the state of game
+  def display
+    @word.each do |letter|
+      if @revealed.include? letter
+        print "#{letter} "
+      else
+        print '_ '
+      end
+    end
+
+    ask_health
+  end
+
+  private
+
+  # Shows quantity of attempts colorized
+  def ask_health
+    case @attempts
+    when 5..7
+      puts @attempts.to_s.light_green
+    when 2..4
+      puts @attempts.to_s.light_yellow
+    when 0..2
+      puts @attempts.to_s.light_red
+    end
+  end
+
+  # Shows the game result
+  def totalize
+    if @winner
+      puts 'Congrats, you won!'.light_cyan
     else
-      @attempts -= 1
-      @message = 'Incorrect. Next try!'
+      puts 'No attempts left, game over. Better luck next time!'.light_magenta
     end
   end
 end
