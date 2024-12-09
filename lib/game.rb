@@ -10,13 +10,15 @@ class Game
     @max_attempts = 10
     @attempts = @max_attempts
     @revealed = []
+    @guesses = []
     @winner = false
   end
 
   # Runs the game loop
   def play
-    puts "Ok, #{@player.name}, let's start!"
     @word = pick_word
+
+    puts "Ok, #{@player.name}, let's start!"
 
     round until gameover?
 
@@ -46,7 +48,15 @@ class Game
   def round
     display
 
-    letter = @player.guess
+    letter = nil
+
+    loop do
+      letter = @player.guess
+
+      break unless @guesses.include? letter
+
+      puts 'Tried already'
+    end
 
     process letter
 
@@ -67,6 +77,7 @@ class Game
     end
 
     print "| Attempts: #{ask_health}\n"
+    puts "Guesses: #{@guesses.join ' '}"
   end
 
   # Shows quantity of attempts colorized
@@ -92,6 +103,8 @@ class Game
       @attempts -= 1
       puts 'Incorrect, next try!'.light_red
     end
+
+    @guesses << guess
   end
 
   # Checks if the word riddle is solved
