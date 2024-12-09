@@ -1,35 +1,85 @@
 # frozen_string_literal: true
 
 require 'colorize'
-require_relative 'computer'
 require_relative 'player'
 
 # Main class of the project, holds the entire state of the game and results
 class Game
   def initialize
     @player = Player.new
-    @computer = Computer.new
-    @attempts = 7
-    @revealed = ''
+    @max_attempts = 10
+    @attempts = @max_attempts
+    @revealed = []
     @winner = false
   end
 
   # Runs the game loop
   def play
-    @word = @computer.pick_word
+    puts "Ok, #{@player.name}, let's start!"
+    @word = pick_word
 
-    # Continues while they're attempts left
-    while @attempts.positive?
-      display
-
-      letter = @player.guess
-
-      process letter
-
-      @winner = true if @revealed == @word
-    end
+    round until gameover?
 
     totalize
+  end
+
+  private
+
+  # Returns a word between 5 and 12 chars long,
+  # else alerts about error and quits the program
+  def pick_word
+    path = 'assets/words.txt'
+    file = File.open path
+  rescue Errno::ENOENT => e
+    puts "Error: can't open words file - #{e}"
+    exit
+  else
+    words = file.readlines.map(&:chomp)
+    file.close
+
+    # Filter words array by word size and return a random item
+    filtered = words.filter { |w| (5..12).include? w.size }
+    filtered.sample
+  end
+
+  # Runs a game round
+  def round
+    display
+
+    letter = @player.guess
+
+    process letter
+
+    return unless solved?
+
+    @winner = true
+  end
+
+  # Shows the state of game
+  def display
+    print 'Word: '
+    @word.split('').each do |letter|
+      if @revealed.include? letter
+        print "#{letter} "
+      else
+        print '_ '
+      end
+    end
+
+    print "| Attempts: #{ask_health}\n"
+  end
+
+  # Shows quantity of attempts colorized
+  def ask_health
+    health = @attempts.to_f / @max_attempts * 10
+    case health.to_i
+    when 7..10
+      @attempts.to_s.light_green
+    when 4..7
+      @attempts.to_s.light_yellow
+    else
+      @attempts.to_s.light_red
+    end
   end
 
   # Shows the letter if guess is right or decreases the attempts else,
@@ -44,31 +94,13 @@ class Game
     end
   end
 
-  # Shows the state of game
-  def display
-    @word.each do |letter|
-      if @revealed.include? letter
-        print "#{letter} "
-      else
-        print '_ '
-      end
-    end
-
-    ask_health
+  # Checks if the word riddle is solved
+  def solved?
+    (@word.split('') - @revealed).empty?
   end
 
-  private
-
-  # Shows quantity of attempts colorized
-  def ask_health
-    case @attempts
-    when 5..7
-      puts @attempts.to_s.light_green
-    when 2..4
-      puts @attempts.to_s.light_yellow
-    when 0..2
-      puts @attempts.to_s.light_red
-    end
+  def gameover?
+    @attempts.zero? || @winner == true
   end
 
   # Shows the game result
@@ -78,5 +110,7 @@ class Game
     else
       puts 'No attempts left, game over. Better luck next time!'.light_magenta
     end
+
+    puts "The word is '#{@word}'"
   end
 end
