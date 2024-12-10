@@ -117,14 +117,14 @@ class Game
     dirname = 'saves'
     Dir.mkdir dirname unless Dir.exist? dirname
 
-    filename = "save-#{Time.now.strftime '%d%m%y-%H%M'}.yaml"
+    filename = "#{Time.now.strftime '%d%m%y-%H%M'}.yaml"
     path = "#{dirname}/#{filename}"
 
     File.open(path, 'w') { |file| file.puts yaml }
   rescue Errno::ENOENT => e
     puts "Saving error: #{e}".light_red
   else
-    puts "Game saved at: #{filename}".light_green
+    puts "Game saved at: #{path}".light_green
   end
 
   def yamlize
@@ -146,17 +146,25 @@ class Game
     # Print the saves menu
     saves.each_with_index { |save, index| puts "#{index + 1}: #{save}" }
 
+    save = pick_save saves
+
+    deyamlize save
+    puts "Save #{save.split('/').last} is successfully loaded".light_green
+  end
+
+  # Returns valid save path
+  def pick_save(saveslist)
     input = nil
 
-    # Ask a save number until it's valid
+    # Ask a number until it's valid
     loop do
       input = gets.chomp
-      break if (1..saves.size).include? input.to_i
+      break if (1..saveslist.size).include? input.to_i
 
       puts 'Wrong number'
     end
 
-    deyamlize saves[input.to_i - 1]
+    saveslist[input.to_i - 1]
   end
 
   # Sets the game state from the save file
