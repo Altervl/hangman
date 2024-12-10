@@ -130,15 +130,48 @@ class Game
   def yamlize
     YAML.dump({
       word: @word, # rubocop:disable Layout/FirstHashElementIndentation
+      attempts: @attempts,
       revealed: @revealed,
-      guesses: @guesses,
-      attempts: @attempts
+      guesses: @guesses
     }) # rubocop:disable Layout/FirstHashElementIndentation
   end
 
   # Loads the game from a yaml file
   def load_game
-    # to do
+    # Get the names of saves
+    saves = Dir['saves/*.yaml']
+
+    puts 'Pick a save:'
+
+    # Print the saves menu
+    saves.each_with_index { |save, index| puts "#{index + 1}: #{save}" }
+
+    input = nil
+
+    # Ask a save number until it's valid
+    loop do
+      input = gets.chomp
+      break if (1..saves.size).include? input.to_i
+
+      puts 'Wrong number'
+    end
+
+    deyamlize saves[input.to_i - 1]
+  end
+
+  # Sets the game state from the save file
+  def deyamlize(filepath)
+    File.open(filepath) do |file|
+      save = file.read
+      # Uses #load instead of #save_load because of a bug with allowed data types
+      data = YAML.load(save) # rubocop:disable Security/YAMLLoad
+      p data
+
+      @word = data[:word]
+      @attempts = data[:attempts]
+      @revealed = data[:revealed]
+      @guesses = data[:guesses]
+    end
   end
 
   # Checks if the word riddle is solved
