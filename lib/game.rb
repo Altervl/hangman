@@ -48,17 +48,17 @@ class Game
   def round
     display
 
-    letter = nil
+    input = nil
 
     loop do
-      letter = @player.guess
+      input = @player.input
 
-      break unless @guesses.include? letter
+      break unless @guesses.include? input
 
       puts 'Tried already'
     end
 
-    process letter
+    process input
 
     return unless solved?
 
@@ -95,16 +95,50 @@ class Game
 
   # Shows the letter if guess is right or decreases the attempts else,
   # notifies the player
-  def process(guess)
-    if @word.include? guess
-      @revealed << guess
+  def process(str)
+    if @word.include? str
+      @revealed << str
       puts 'Correct, next letter!'.light_green
+    elsif %w[save load].include? str
+      str == 'save' ? save_game : load_game
     else
       @attempts -= 1
       puts 'Incorrect, next try!'.light_red
     end
 
-    @guesses << guess
+    # Don't add save/load commands to guesses
+    @guesses << str unless %w[save load].include? str
+  end
+
+  # Saves the game to a yaml file
+  def save_game
+    yaml = yamlize
+
+    dirname = 'saves'
+    Dir.mkdir dirname unless Dir.exist? dirname
+
+    filename = "save-#{Time.now.strftime '%d%m%y-%H%M'}.yaml"
+    path = "#{dirname}/#{filename}"
+
+    File.open(path, 'w') { |file| file.puts yaml }
+  rescue Errno::ENOENT => e
+    puts "Saving error: #{e}".light_red
+  else
+    puts "Game saved at: #{filename}".light_green
+  end
+
+  def yamlize
+    YAML.dump({
+      word: @word, # rubocop:disable Layout/FirstHashElementIndentation
+      revealed: @revealed,
+      guesses: @guesses,
+      attempts: @attempts
+    }) # rubocop:disable Layout/FirstHashElementIndentation
+  end
+
+  # Loads the game from a yaml file
+  def load_game
+    # to do
   end
 
   # Checks if the word riddle is solved
